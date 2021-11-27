@@ -1,0 +1,52 @@
+version: "3.9"
+services:
+     deconz:
+          image: deconzcommunity/deconz
+          container_name: deconz
+          restart: always
+          ports:
+               - "80:80"
+               - "443:443"
+          volumes:
+               - /opt/deconz:/opt/deCONZ
+          devices:
+               - /dev/ttyACM0 # Conbee II = /dev/ttyACM0, RaspBee = /dev/ttyAMA0 or /dev/ttyS0
+          environment:
+               - DECONZ_WEB_PORT=80
+               - DECONZ_WS_PORT=443
+               - DEBUG_INFO=1
+               - DEBUG_APS=0
+               - DEBUG_ZCL=0
+               - DEBUG_ZDP=0
+               - DEBUG_OTAU=0
+     mosquitto:
+          image: eclipse-mosquitto
+          container_name: mosquitto
+          restart: unless-stopped
+          ports:
+               - "1883:1883"
+               - "1884:1884"
+               - "9001:9001"
+          volumes:
+               - ./mosquitto/config:/mosquitto/config
+               - ./mosquitto/data:/mosquitto/data
+               - ./mosquitto/log:/mosquitto/log
+     nodered:
+          image: nodered/node-red
+          container_name: nodered
+          depends_on:
+               - deconz
+               - mosquitto
+          ports:
+               - "1880:1880"
+          volumes:
+               - ./nodered/data:/data
+     portainer:
+          image: portainer/portainer-ce
+          container_name: portainer
+          restart: unless-stopped
+          ports:
+               - "9000:9000"
+          volumes:
+               - "/var/run/docker.sock:/var/run/docker.sock"
+               - "./portainer/data:/data"
